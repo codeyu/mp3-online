@@ -24,7 +24,7 @@ interface AudioPlayerProps {
 
 type RepeatMode = 'none' | 'all' | 'one';
 
-export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ src, onNext, onPrevious, playlist, onPlaylistItemEnd }, ref) => {
+const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ src, onNext, onPrevious, playlist, onPlaylistItemEnd }, ref) => {
   const audioRef = useRef<HTMLAudioElement>(null)
 
   useImperativeHandle(ref, () => audioRef.current as HTMLAudioElement);
@@ -216,4 +216,8 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ src
     </div>
   )
 })
+
+AudioPlayer.displayName = 'AudioPlayer';
+
+export { AudioPlayer };
 

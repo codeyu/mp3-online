@@ -82,7 +82,7 @@ export function useIndexedDB() {
     request.onsuccess = () => {
       const playlist = request.result;
       if (playlist) {
-        playlist.items = playlist.items.map(item =>
+        playlist.items = playlist.items.map((item: PlaylistItem) =>
           item.uuid === updatedItem.uuid ? updatedItem : item
         );
         store.put(playlist);
@@ -119,8 +119,7 @@ export function useIndexedDB() {
     request.onsuccess = () => {
       const playlist = request.result;
       if (playlist) {
-        // 从播放列表中移除指定 uuid 的项目
-        playlist.items = playlist.items.filter(item => item.uuid !== uuid);
+        playlist.items = playlist.items.filter((item: PlaylistItem) => item.uuid !== uuid);
         store.put(playlist);
       }
     };

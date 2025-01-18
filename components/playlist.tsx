@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { usePlayer } from '../contexts/PlayerContext';
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Play, Trash2, Pencil, Loader2 } from 'lucide-react'
+import { Play, Trash2, Pencil, Loader2, Music } from 'lucide-react'
 import { EditDialog } from './edit-dialog'
 import { PlaylistItem } from '../types/interfaces';
+import { cn } from "@/lib/utils"
 
 export function Playlist() {
   const { currentPlaylist, playlist, playTrack, updatePlaylistItem, removeFromPlaylist, currentTrack } = usePlayer();
@@ -22,7 +23,6 @@ export function Playlist() {
       setIsDeleting(item.uuid);
       await removeFromPlaylist(item.uuid);
       
-      // 如果是本地文件，释放 Blob URL
       if (item.source === 'local' && item.url.startsWith('blob:')) {
         URL.revokeObjectURL(item.url);
       }
@@ -31,10 +31,6 @@ export function Playlist() {
     } finally {
       setIsDeleting(null);
     }
-  };
-
-  const handleEdit = (item: PlaylistItem) => {
-    setEditingItem(item);
   };
 
   const handleSaveEdit = async (editedItem: PlaylistItem) => {
@@ -67,7 +63,10 @@ export function Playlist() {
             {playlist.map((item) => (
               <TableRow 
                 key={item.uuid} 
-                className={`group ${currentTrack?.uuid === item.uuid ? 'bg-primary/10' : ''}`}
+                className={cn(
+                  "group",
+                  currentTrack?.uuid === item.uuid && "bg-primary/10"
+                )}
               >
                 <TableCell>
                   {item.name || new URL(item.url).pathname.split('/').pop()}
@@ -81,14 +80,21 @@ export function Playlist() {
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      onClick={() => playTrack(item)}
+                      onClick={() => handlePlay(item)}
+                      className={cn(
+                        currentTrack?.uuid === item.uuid && "text-primary"
+                      )}
                     >
-                      <Play className="h-4 w-4" />
+                      {currentTrack?.uuid === item.uuid ? (
+                        <Music className="h-4 w-4 animate-pulse" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
                     </Button>
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      onClick={() => handleEdit(item)}
+                      onClick={() => setEditingItem(item)}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>

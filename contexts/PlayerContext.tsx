@@ -161,13 +161,13 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (!playlistData) return;
 
       // 使用新名称创建播放列表
-      const newPlaylistData = {
-        ...playlistData,
+      await addToIndexedDB(newName, {
+        uuid: 'playlist-' + newName,
         name: newName,
-      };
-
-      // 保存新播放列表
-      await addToIndexedDB(newName, ...playlistData.items);
+        description: '',
+        url: '',
+        source: 'url' as const,
+      });
 
       // 如果是当前播放列表，更新当前播放列表名称
       if (currentPlaylist === oldName) {
@@ -188,6 +188,7 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setCurrentTrack,
     playlists,
     playlist,
+    setPlaylist,
     addToPlaylist,
     playTrack,
     updatePlaylistItem,
@@ -197,6 +198,10 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     updatePlaylistName,
     currentPlayingPlaylist,
     setCurrentPlayingPlaylist,
+    getCurrentPlaylistItems: async () => {
+      const playlistData = await getPlaylist(currentPlaylist);
+      return playlistData?.items || [];
+    },
   }), [
     currentPlaylist,
     currentTrack,
@@ -210,7 +215,8 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     removeFromPlaylist,
     updatePlaylistName,
     currentPlayingPlaylist,
-    setCurrentPlayingPlaylist
+    setCurrentPlayingPlaylist,
+    getPlaylist
   ]);
 
   return (

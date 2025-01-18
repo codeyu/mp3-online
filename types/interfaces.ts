@@ -3,6 +3,7 @@ export interface PlaylistItem {
     name: string;
     description: string;
     url: string;
+    source: string;
 }
   
 export interface Playlist {
