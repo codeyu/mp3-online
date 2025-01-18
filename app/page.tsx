@@ -72,7 +72,8 @@ export default function Home() {
   };
 
   const handlePlaylistItemEnd = () => {
-    const currentIndex = playlist.findIndex(item => item.url === currentTrack?.url);
+    if (!currentTrack || playlist.length === 0) return;
+    const currentIndex = playlist.findIndex(item => item.uuid === currentTrack.uuid);
     const nextIndex = (currentIndex + 1) % playlist.length;
     playTrack(playlist[nextIndex]);
   };
@@ -104,7 +105,8 @@ export default function Home() {
               src={currentTrack.url}
               onNext={handlePlaylistItemEnd}
               onPrevious={() => {
-                const currentIndex = playlist.findIndex(item => item.url === currentTrack.url);
+                if (!currentTrack || playlist.length === 0) return;
+                const currentIndex = playlist.findIndex(item => item.uuid === currentTrack.uuid);
                 const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length;
                 playTrack(playlist[prevIndex]);
               }}
