@@ -1,7 +1,7 @@
 'use client'
 
 import { PlayerProvider } from '../contexts/PlayerContext'
-import { ThemeProvider } from '@/components/theme-provider'
+import { Header } from '../components/header'
 import '@/app/globals.css'
 
 export default function RootLayout({
@@ -10,20 +10,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ja" suppressHydrationWarning>
+    <html lang="ja">
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <PlayerProvider>
-            <div className="min-h-screen bg-background text-foreground">
-              {children}
-            </div>
-          </PlayerProvider>
-        </ThemeProvider>
+        <PlayerProvider>
+          <div className="min-h-screen bg-background">
+            <Header />
+            {children}
+          </div>
+        </PlayerProvider>
       </body>
     </html>
   )

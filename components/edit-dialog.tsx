@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { PlaylistItem } from '../hooks/useIndexedDB'
+import { PlaylistItem } from '../types/interfaces';
 
 interface EditDialogProps {
   item: PlaylistItem
@@ -28,13 +28,13 @@ export function EditDialog({ item, onSave, onCancel }: EditDialogProps) {
     <Dialog open={true} onOpenChange={onCancel}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>アイテムを編集</DialogTitle>
+          <DialogTitle>曲の編集</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
-                名称
+                タイトル
               </Label>
               <Input
                 id="name"
