@@ -17,6 +17,7 @@ interface PlayerContextType {
   playTrack: (track: PlaylistItem) => void;
   updatePlaylistItem: (playlistName: string, updatedItem: PlaylistItem) => Promise<void>;
   audioRef: React.RefObject<HTMLAudioElement>;
+  removeFromPlaylist: (uuid: string) => Promise<void>;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -26,7 +27,7 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [currentTrack, setCurrentTrack] = useState<PlaylistItem | null>(null);
   const [playlists, setPlaylists] = useState<string[]>([]);
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
-  const { addToPlaylist: addToIndexedDB, getPlaylists, getPlaylist, updatePlaylistItem: updatePlaylistItemIndexedDB } = useIndexedDB();
+  const { addToPlaylist: addToIndexedDB, getPlaylists, getPlaylist, updatePlaylistItem: updatePlaylistItemIndexedDB, removeFromPlaylist: removeFromIndexedDB } = useIndexedDB();
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const refreshPlaylists = useCallback(async () => {
@@ -42,20 +43,25 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         
         // 現在のプレイリストの曲を取得
         const currentPlaylistData = await getPlaylist(currentPlaylist);
+        console.log('Current playlist data:', currentPlaylistData);
+        
         if (currentPlaylistData) {
           setPlaylist(currentPlaylistData.items || []);
         } else {
-          // デフォルトプレイリストが存在しない場合は作成
+          // デフォルトプレイリストが存在しない場合は空の配列を設定
+          console.log('Creating empty default playlist...');
           await addToIndexedDB(currentPlaylist, {
             uuid: 'default',
-            name: 'Welcome',
-            description: 'Welcome to MP3 Online Player',
-            url: ''
+            name: 'プレイリストが空です',
+            description: 'URLまたはファイルを追加してください',
+            url: '',
+            source: 'url' as const
           });
           setPlaylist([]);
         }
       } catch (error) {
         console.error('Failed to initialize playlists:', error);
+        setPlaylist([]); // エラー時も空の配列を設定
       }
     };
 
@@ -108,6 +114,30 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, []);
 
+  const removeFromPlaylist = useCallback(async (uuid: string) => {
+    try {
+      // 如果要删除的是当前播放的曲目，先停止播放
+      if (currentTrack?.uuid === uuid) {
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        setCurrentTrack(null);
+      }
+
+      await removeFromIndexedDB(currentPlaylist, uuid);
+      
+      // 更新当前播放列表
+      const updatedPlaylist = await getPlaylist(currentPlaylist);
+      if (updatedPlaylist) {
+        setPlaylist(updatedPlaylist.items);
+      }
+
+      console.log('Removed track from playlist:', { playlist: currentPlaylist, uuid });
+    } catch (error) {
+      console.error('Error removing from playlist:', error);
+    }
+  }, [currentPlaylist, currentTrack, removeFromIndexedDB, getPlaylist]);
+
   const value = useMemo(() => ({
     currentPlaylist,
     setCurrentPlaylist,
@@ -120,6 +150,7 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     updatePlaylistItem,
     refreshPlaylists,
     audioRef,
+    removeFromPlaylist,
   }), [
     currentPlaylist,
     currentTrack,
@@ -129,7 +160,8 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     playTrack,
     updatePlaylistItem,
     refreshPlaylists,
-    audioRef
+    audioRef,
+    removeFromPlaylist
   ]);
 
   return (

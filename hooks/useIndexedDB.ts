@@ -108,6 +108,24 @@ export function useIndexedDB() {
     });
   }, [db]);
 
+  const removeFromPlaylist = useCallback(async (playlistName: string, uuid: string): Promise<void> => {
+    if (!db) return;
+    
+    const transaction = db.transaction(PLAYLISTS_STORE, 'readwrite');
+    const store = transaction.objectStore(PLAYLISTS_STORE);
+    
+    const request = store.get(playlistName);
+    
+    request.onsuccess = () => {
+      const playlist = request.result;
+      if (playlist) {
+        // 从播放列表中移除指定 uuid 的项目
+        playlist.items = playlist.items.filter(item => item.uuid !== uuid);
+        store.put(playlist);
+      }
+    };
+  }, [db]);
+
   return {
     getPlaylists,
     getPlaylist,
@@ -115,6 +133,7 @@ export function useIndexedDB() {
     updatePlaylistItem,
     saveSetting,
     getSetting,
+    removeFromPlaylist,
   };
 }
 

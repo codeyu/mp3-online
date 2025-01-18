@@ -33,7 +33,10 @@ export default function Home() {
         url: url,
         source: 'url' as const
       };
+
       await addToPlaylist(currentPlaylist, newTrack);
+      console.log('Added track to playlist:', { playlist: currentPlaylist, track: newTrack });
+
       playTrack(newTrack);
       setUrl('');
     }
@@ -49,7 +52,10 @@ export default function Home() {
       source: 'local' as const,
       file: file
     };
+
     await addToPlaylist(currentPlaylist, newTrack);
+    console.log('Added file to playlist:', { playlist: currentPlaylist, track: newTrack });
+
     playTrack(newTrack);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -65,7 +71,9 @@ export default function Home() {
         url: url,
         source: 'url' as const
       };
+
       await addToPlaylist(playlistName, newTrack);
+      console.log('Added track to playlist via dialog:', { playlist: playlistName, track: newTrack });
       setIsDialogOpen(false);
       setUrl('');
     }
