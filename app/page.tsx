@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -14,12 +15,14 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { AudioPlayer } from '../components/audio-player';
 import { Playlist } from '../components/playlist';
 import { v4 as uuidv4 } from 'uuid';
+import { Link, Upload } from 'lucide-react';
 
 export default function Home() {
   const [url, setUrl] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { currentTrack, setCurrentTrack, addToPlaylist, playlists, refreshPlaylists, setCurrentPlaylist, currentPlaylist, playlist, playTrack } = usePlayer();
+  const { currentTrack, addToPlaylist, playlists, refreshPlaylists, setCurrentPlaylist, currentPlaylist, playlist, playTrack } = usePlayer();
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePlay = async () => {
     if (url) {
@@ -27,11 +30,29 @@ export default function Home() {
         uuid: uuidv4(),
         name: new URL(url).pathname.split('/').pop() || '',
         description: '',
-        url: url
+        url: url,
+        source: 'url' as const
       };
       await addToPlaylist(currentPlaylist, newTrack);
       playTrack(newTrack);
       setUrl('');
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    const blobUrl = URL.createObjectURL(file);
+    const newTrack = {
+      uuid: uuidv4(),
+      name: file.name,
+      description: '',
+      url: blobUrl,
+      source: 'local' as const,
+      file: file
+    };
+    await addToPlaylist(currentPlaylist, newTrack);
+    playTrack(newTrack);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -41,7 +62,8 @@ export default function Home() {
         uuid: uuidv4(),
         name: new URL(url).pathname.split('/').pop() || '',
         description: '',
-        url: url
+        url: url,
+        source: 'url' as const
       };
       await addToPlaylist(playlistName, newTrack);
       setIsDialogOpen(false);
@@ -76,7 +98,6 @@ export default function Home() {
       </div>
       <div className="flex-1 p-4">
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">音楽プレーヤー</h2>
           {currentTrack && (
             <AudioPlayer
               ref={audioPlayerRef}
@@ -92,44 +113,76 @@ export default function Home() {
             />
           )}
         </div>
-        <div className="flex mb-4">
-          <Input
-            type="text"
-            placeholder="MP3またはM4AのURLを入力"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="flex-1 mr-2"
-          />
-          <Button onClick={handlePlay} className="mr-2">再生</Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>プレイリストに追加</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>プレイリストを選択</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                {playlists.map((playlist) => (
-                  <Button key={playlist} onClick={() => handleAddToPlaylist(playlist)}>
-                    {playlist}
-                  </Button>
-                ))}
-                <Input
-                  placeholder="新しいプレイリスト名"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleAddToPlaylist((e.target as HTMLInputElement).value);
-                    }
-                  }}
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-        <div>
-          <Playlist />
-        </div>
+
+        <Tabs defaultValue="url" className="mb-4">
+          <TabsList className="mb-4">
+            <TabsTrigger value="url" className="flex items-center gap-2">
+              <Link className="h-4 w-4" />
+              URLから追加
+            </TabsTrigger>
+            <TabsTrigger value="file" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              ファイルから追加
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="url" className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="MP3またはM4AのURLを入力"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={handlePlay} className="whitespace-nowrap">再生</Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">プレイリストに追加</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>プレイリストを選択</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  {playlists.map((playlist) => (
+                    <Button key={playlist} onClick={() => handleAddToPlaylist(playlist)}>
+                      {playlist}
+                    </Button>
+                  ))}
+                  <Input
+                    placeholder="新しいプレイリスト名"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAddToPlaylist((e.target as HTMLInputElement).value);
+                      }
+                    }}
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+
+          <TabsContent value="file">
+            <div className="border-2 border-dashed rounded-lg p-8 text-center">
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="audio/mp3,audio/m4a"
+                onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+                className="hidden"
+              />
+              <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground mb-4">
+                MP3またはM4Aファイルをドラッグ＆ドロップ、または
+              </p>
+              <Button onClick={() => fileInputRef.current?.click()}>
+                ファイルを選択
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        <Playlist />
       </div>
     </div>
   );
