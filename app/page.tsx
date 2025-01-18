@@ -16,6 +16,7 @@ import { AudioPlayer } from '../components/audio-player';
 import { Playlist } from '../components/playlist';
 import { v4 as uuidv4 } from 'uuid';
 import { Link, Upload, Pencil, Check, Music } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -25,6 +26,7 @@ export default function Home() {
   const { currentTrack, addToPlaylist, playlists, refreshPlaylists, setCurrentPlaylist, currentPlaylist, currentPlayingPlaylist, playlist, playTrack, updatePlaylistName } = usePlayer();
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handlePlay = async () => {
     if (url) {
@@ -104,18 +106,35 @@ export default function Home() {
     refreshPlaylists();
   }, [refreshPlaylists]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setEditingPlaylist(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="flex h-screen">
       <div className="w-64 bg-muted p-4 flex flex-col">
         <h2 className="text-lg font-bold mb-4">プレイリスト</h2>
-        <div className="space-y-2">
-          {playlists.map((name) => (
+        <div className="space-y-0.5">
+          {playlists.map((name, index) => (
             <div
               key={name}
-              className={`group flex items-center justify-between p-2 rounded 
-                hover:bg-accent/50 transition-colors duration-200
-                ${currentPlaylist === name ? 'bg-accent' : ''}
-              `}
+              className={cn(
+                "relative group flex items-center justify-between p-2 rounded-md",
+                "hover:bg-accent/50 transition-colors duration-200",
+                "border-b border-border/30",
+                currentPlaylist === name && "bg-accent/70 hover:bg-accent/70",
+                editingPlaylist === name ? '' : 'cursor-pointer',
+                index === playlists.length - 1 && "border-b-0"
+              )}
               onClick={() => {
                 if (!editingPlaylist) {
                   setCurrentPlaylist(name);
@@ -124,22 +143,30 @@ export default function Home() {
             >
               <div className="flex items-center flex-1 min-w-0">
                 {editingPlaylist === name ? (
-                  <Input
-                    value={editedPlaylistName}
-                    onChange={(e) => setEditedPlaylistName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSavePlaylistName();
-                      } else if (e.key === 'Escape') {
-                        setEditingPlaylist(null);
-                      }
-                    }}
-                    className="h-6 text-sm"
-                    autoFocus
-                  />
+                  <div onClick={(e) => e.stopPropagation()} className="flex-1">
+                    <Input
+                      ref={inputRef}
+                      value={editedPlaylistName}
+                      onChange={(e) => setEditedPlaylistName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSavePlaylistName();
+                        } else if (e.key === 'Escape') {
+                          setEditingPlaylist(null);
+                        }
+                      }}
+                      className="h-6 text-sm cursor-text"
+                      autoFocus
+                    />
+                  </div>
                 ) : (
                   <div className="flex items-center space-x-2 overflow-hidden">
-                    <span className="truncate">{name}</span>
+                    <span className={cn(
+                      "truncate",
+                      currentPlaylist === name && "font-medium"
+                    )}>
+                      {name}
+                    </span>
                     {currentPlayingPlaylist === name && (
                       <div className="flex items-center gap-1 text-primary">
                         <Music className="h-3.5 w-3.5 animate-pulse" />
@@ -155,7 +182,10 @@ export default function Home() {
                   size="icon"
                   variant="ghost"
                   className="h-6 w-6 opacity-100 flex-shrink-0 ml-2"
-                  onClick={handleSavePlaylistName}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSavePlaylistName();
+                  }}
                 >
                   <Check className="h-4 w-4" />
                 </Button>
@@ -171,6 +201,10 @@ export default function Home() {
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
+              )}
+
+              {currentPlaylist === name && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full" />
               )}
             </div>
           ))}
