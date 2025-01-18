@@ -19,12 +19,15 @@ interface PlayerContextType {
   audioRef: React.RefObject<HTMLAudioElement>;
   removeFromPlaylist: (uuid: string) => Promise<void>;
   updatePlaylistName: (oldName: string, newName: string) => Promise<void>;
+  currentPlayingPlaylist: string;
+  setCurrentPlayingPlaylist: (playlist: string) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentPlaylist, setCurrentPlaylist] = useState<string>('デフォルト');
+  const [currentPlayingPlaylist, setCurrentPlayingPlaylist] = useState<string>('デフォルト');
   const [currentTrack, setCurrentTrack] = useState<PlaylistItem | null>(null);
   const [playlists, setPlaylists] = useState<string[]>([]);
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
@@ -108,12 +111,22 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [updatePlaylistItemIndexedDB, currentPlaylist, currentTrack]);
 
   const playTrack = useCallback((track: PlaylistItem) => {
-    setCurrentTrack(track);
-    if (audioRef.current) {
-      audioRef.current.src = track.url;
-      audioRef.current.play();
+    const validTrack = playlist.find(item => item.uuid === track.uuid);
+    if (!validTrack) {
+      console.error('Invalid track UUID:', track.uuid);
+      return;
     }
-  }, []);
+
+    setCurrentTrack(validTrack);
+    setCurrentPlayingPlaylist(currentPlaylist); // 设置当前正在播放的播放列表
+
+    if (audioRef.current) {
+      audioRef.current.src = validTrack.url;
+      audioRef.current.play().catch(error => {
+        console.error('Failed to play track:', error);
+      });
+    }
+  }, [playlist, currentPlaylist]);
 
   const removeFromPlaylist = useCallback(async (uuid: string) => {
     try {
@@ -182,6 +195,8 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     audioRef,
     removeFromPlaylist,
     updatePlaylistName,
+    currentPlayingPlaylist,
+    setCurrentPlayingPlaylist,
   }), [
     currentPlaylist,
     currentTrack,
@@ -193,7 +208,9 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     refreshPlaylists,
     audioRef,
     removeFromPlaylist,
-    updatePlaylistName
+    updatePlaylistName,
+    currentPlayingPlaylist,
+    setCurrentPlayingPlaylist
   ]);
 
   return (

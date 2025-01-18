@@ -15,14 +15,14 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { AudioPlayer } from '../components/audio-player';
 import { Playlist } from '../components/playlist';
 import { v4 as uuidv4 } from 'uuid';
-import { Link, Upload, Pencil, Check } from 'lucide-react';
+import { Link, Upload, Pencil, Check, Music } from 'lucide-react';
 
 export default function Home() {
   const [url, setUrl] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState<string | null>(null);
   const [editedPlaylistName, setEditedPlaylistName] = useState('');
-  const { currentTrack, addToPlaylist, playlists, refreshPlaylists, setCurrentPlaylist, currentPlaylist, playlist, playTrack, updatePlaylistName } = usePlayer();
+  const { currentTrack, addToPlaylist, playlists, refreshPlaylists, setCurrentPlaylist, currentPlaylist, currentPlayingPlaylist, playlist, playTrack, updatePlaylistName } = usePlayer();
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -112,37 +112,49 @@ export default function Home() {
           {playlists.map((name) => (
             <div
               key={name}
-              className={`group flex items-center justify-between p-2 rounded hover:bg-accent cursor-pointer ${
-                currentPlaylist === name ? 'bg-primary/10' : ''
-              }`}
+              className={`group flex items-center justify-between p-2 rounded 
+                hover:bg-accent/50 transition-colors duration-200
+                ${currentPlaylist === name ? 'bg-accent' : ''}
+              `}
               onClick={() => {
                 if (!editingPlaylist) {
                   setCurrentPlaylist(name);
                 }
               }}
             >
-              {editingPlaylist === name ? (
-                <Input
-                  value={editedPlaylistName}
-                  onChange={(e) => setEditedPlaylistName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSavePlaylistName();
-                    } else if (e.key === 'Escape') {
-                      setEditingPlaylist(null);
-                    }
-                  }}
-                  className="h-6 text-sm"
-                  autoFocus
-                />
-              ) : (
-                <span className="flex-1">{name}</span>
-              )}
+              <div className="flex items-center flex-1 min-w-0">
+                {editingPlaylist === name ? (
+                  <Input
+                    value={editedPlaylistName}
+                    onChange={(e) => setEditedPlaylistName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSavePlaylistName();
+                      } else if (e.key === 'Escape') {
+                        setEditingPlaylist(null);
+                      }
+                    }}
+                    className="h-6 text-sm"
+                    autoFocus
+                  />
+                ) : (
+                  <div className="flex items-center space-x-2 overflow-hidden">
+                    <span className="truncate">{name}</span>
+                    {currentPlayingPlaylist === name && (
+                      <div className="flex items-center gap-1 text-primary">
+                        <Music className="h-3.5 w-3.5 animate-pulse" />
+                        <span className="text-xs">再生中</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
               {editingPlaylist === name ? (
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-6 w-6 opacity-100"
+                  className="h-6 w-6 opacity-100 flex-shrink-0 ml-2"
                   onClick={handleSavePlaylistName}
                 >
                   <Check className="h-4 w-4" />
@@ -151,7 +163,7 @@ export default function Home() {
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleEditPlaylist(name);
