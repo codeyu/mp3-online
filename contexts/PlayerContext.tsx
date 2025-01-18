@@ -18,6 +18,7 @@ interface PlayerContextType {
   updatePlaylistItem: (playlistName: string, updatedItem: PlaylistItem) => Promise<void>;
   audioRef: React.RefObject<HTMLAudioElement>;
   removeFromPlaylist: (uuid: string) => Promise<void>;
+  updatePlaylistName: (oldName: string, newName: string) => Promise<void>;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -138,6 +139,35 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [currentPlaylist, currentTrack, removeFromIndexedDB, getPlaylist]);
 
+  const updatePlaylistName = useCallback(async (oldName: string, newName: string) => {
+    try {
+      if (oldName === newName) return;
+
+      // 获取旧播放列表的数据
+      const playlistData = await getPlaylist(oldName);
+      if (!playlistData) return;
+
+      // 使用新名称创建播放列表
+      const newPlaylistData = {
+        ...playlistData,
+        name: newName,
+      };
+
+      // 保存新播放列表
+      await addToIndexedDB(newName, ...playlistData.items);
+
+      // 如果是当前播放列表，更新当前播放列表名称
+      if (currentPlaylist === oldName) {
+        setCurrentPlaylist(newName);
+      }
+
+      // 刷新播放列表
+      await refreshPlaylists();
+    } catch (error) {
+      console.error('Error updating playlist name:', error);
+    }
+  }, [currentPlaylist, getPlaylist, addToIndexedDB, refreshPlaylists]);
+
   const value = useMemo(() => ({
     currentPlaylist,
     setCurrentPlaylist,
@@ -151,6 +181,7 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     refreshPlaylists,
     audioRef,
     removeFromPlaylist,
+    updatePlaylistName,
   }), [
     currentPlaylist,
     currentTrack,
@@ -161,7 +192,8 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     updatePlaylistItem,
     refreshPlaylists,
     audioRef,
-    removeFromPlaylist
+    removeFromPlaylist,
+    updatePlaylistName
   ]);
 
   return (

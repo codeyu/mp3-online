@@ -15,12 +15,14 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { AudioPlayer } from '../components/audio-player';
 import { Playlist } from '../components/playlist';
 import { v4 as uuidv4 } from 'uuid';
-import { Link, Upload } from 'lucide-react';
+import { Link, Upload, Pencil, Check } from 'lucide-react';
 
 export default function Home() {
   const [url, setUrl] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { currentTrack, addToPlaylist, playlists, refreshPlaylists, setCurrentPlaylist, currentPlaylist, playlist, playTrack } = usePlayer();
+  const [editingPlaylist, setEditingPlaylist] = useState<string | null>(null);
+  const [editedPlaylistName, setEditedPlaylistName] = useState('');
+  const { currentTrack, addToPlaylist, playlists, refreshPlaylists, setCurrentPlaylist, currentPlaylist, playlist, playTrack, updatePlaylistName } = usePlayer();
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,24 +88,81 @@ export default function Home() {
     playTrack(playlist[nextIndex]);
   };
 
+  const handleEditPlaylist = (name: string) => {
+    setEditingPlaylist(name);
+    setEditedPlaylistName(name);
+  };
+
+  const handleSavePlaylistName = async () => {
+    if (editingPlaylist && editedPlaylistName.trim()) {
+      await updatePlaylistName(editingPlaylist, editedPlaylistName.trim());
+      setEditingPlaylist(null);
+    }
+  };
+
   useEffect(() => {
     refreshPlaylists();
   }, [refreshPlaylists]);
 
   return (
     <div className="flex h-screen">
-      <div className="w-1/4 p-4 border-r">
-        <h2 className="text-xl font-bold mb-4">プレイリスト一覧</h2>
-        {playlists.map((playlist) => (
-          <Button
-            key={playlist}
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={() => setCurrentPlaylist(playlist)}
-          >
-            {playlist}
-          </Button>
-        ))}
+      <div className="w-64 bg-muted p-4 flex flex-col">
+        <h2 className="text-lg font-bold mb-4">プレイリスト</h2>
+        <div className="space-y-2">
+          {playlists.map((name) => (
+            <div
+              key={name}
+              className={`group flex items-center justify-between p-2 rounded hover:bg-accent cursor-pointer ${
+                currentPlaylist === name ? 'bg-primary/10' : ''
+              }`}
+              onClick={() => {
+                if (!editingPlaylist) {
+                  setCurrentPlaylist(name);
+                }
+              }}
+            >
+              {editingPlaylist === name ? (
+                <Input
+                  value={editedPlaylistName}
+                  onChange={(e) => setEditedPlaylistName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSavePlaylistName();
+                    } else if (e.key === 'Escape') {
+                      setEditingPlaylist(null);
+                    }
+                  }}
+                  className="h-6 text-sm"
+                  autoFocus
+                />
+              ) : (
+                <span className="flex-1">{name}</span>
+              )}
+              {editingPlaylist === name ? (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 opacity-100"
+                  onClick={handleSavePlaylistName}
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditPlaylist(name);
+                  }}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
       <div className="flex-1 p-4">
         <div className="mb-8">
